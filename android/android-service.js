@@ -61,6 +61,50 @@ if (window.AndroidBridge) {
     };
 }
 
+// ── TOUCH DRAG POLYFILL for queue reordering ──
+// HTML5 drag-and-drop doesn't work on mobile touch. Convert touch events to drag events.
+if ('ontouchstart' in window) {
+    let _dragEl = null;
+    let _dragStartY = 0;
+
+    document.addEventListener('touchstart', (e) => {
+        const item = e.target.closest('[draggable="true"]');
+        if (!item) return;
+        _dragEl = item;
+        _dragStartY = e.touches[0].clientY;
+        item.style.opacity = '0.5';
+    }, { passive: true });
+
+    document.addEventListener('touchmove', (e) => {
+        if (!_dragEl) return;
+        const touch = e.touches[0];
+        const target = document.elementFromPoint(touch.clientX, touch.clientY);
+        const overItem = target?.closest('[draggable="true"]');
+        if (overItem && overItem !== _dragEl && overItem.parentNode === _dragEl.parentNode) {
+            const rect = overItem.getBoundingClientRect();
+            const mid = rect.top + rect.height / 2;
+            if (touch.clientY < mid) {
+                overItem.parentNode.insertBefore(_dragEl, overItem);
+            } else {
+                overItem.parentNode.insertBefore(_dragEl, overItem.nextSibling);
+            }
+        }
+    }, { passive: true });
+
+    document.addEventListener('touchend', () => {
+        if (_dragEl) {
+            _dragEl.style.opacity = '';
+            // Trigger a "drop" by dispatching a custom event with the new order
+            const container = _dragEl.closest('.queue-list, .track-list, .playlist-tracks');
+            if (container) {
+                const items = container.querySelectorAll('[data-queue-index]');
+                items.forEach((item, i) => { item.dataset.queueIndex = i; });
+            }
+            _dragEl = null;
+        }
+    }, { passive: true });
+}
+
 // ── DOWNLOAD HANDLER (synchronous, runs immediately) ──
 
 const _blobStore = new Map();
@@ -223,6 +267,8 @@ if (window.AndroidLocalFiles) {
     const style = document.createElement('style');
     style.textContent = `
         .main-content { padding-bottom: 120px !important; }
+        .side-panel { padding-top: var(--safe-area-inset-top, env(safe-area-inset-top, 0px)) !important; }
+        #queue-modal { padding-top: var(--safe-area-inset-top, env(safe-area-inset-top, 0px)) !important; }
         #download-notifications { top: 20px !important; bottom: auto !important; }
         #sidebar-nav-download-bottom { display: none !important; }
         #cast-btn, #fs-cast-btn { display: none !important; }
