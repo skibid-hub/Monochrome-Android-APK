@@ -8,3 +8,4 @@ android/app/build/
 android/capacitor-cordova-android-plugins/
 android/app/capacitor.build.gradle
 android/app/src/main/assets/
+android/app/src/main/res/xml/config.xml
