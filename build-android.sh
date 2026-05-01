@@ -29,29 +29,30 @@ cd "$PROJECT_DIR"
 cleanup() {
     echo ""
     echo "▶ Cleaning up patched files..."
-    # Revert every tracked file we may have touched.
-    # NOTE: do this file-by-file because `git checkout -- a b c` fails entirely
-    # if any single file is not tracked (e.g. package-lock.json which upstream
-    # doesn't track — they use bun.lock).
+    # Revert tracked files that may have been overwritten by git archive.
     for f in \
-        index.html \
-        package.json \
-        vite.config.ts \
-        js/app.js \
-        js/api.js \
-        js/cache.js \
-        js/ui.js \
-        js/storage.js \
+        .gitignore \
         android/app/src/main/java/tf/monochrome/music/BackgroundAudioPlugin.java
     do
         if git ls-files --error-unmatch "$f" >/dev/null 2>&1; then
             git checkout -- "$f" 2>/dev/null || true
         fi
     done
-    # Untracked files we generated during the build
-    rm -f js/android-service.js js/fm-logger.js package-lock.json
+    # Remove all upstream web app files we extracted (they are not tracked in this repo).
+    rm -rf \
+        index.html package.json package-lock.json bun.lock bun.lockb \
+        vite.config.ts vite-plugin-auth-gate.js vite-plugin-blob.ts \
+        vite-plugin-svg-use.ts vite-plugin-upload.js \
+        styles.css stream-stub.js tsconfig.json tsconfig-eslint.json \
+        eslint.config.js lhci.yml nginx.conf \
+        js/ src/ public/ assets/ functions/ images/ dist/ node_modules/ \
+        .npmrc .prettierrc .stylelintrc.json .htmlhintrc .gitmodules \
+        .dockerignore .vscode/ .wrangler/ \
+        android/build.gradle android/capacitor.settings.gradle \
+        android/gradle.properties android/settings.gradle android/variables.gradle \
+        android/gradlew android/gradlew.bat android/gradle/ android/.gitignore
     rm -rf node_modules/@capgo/capacitor-media-session 2>/dev/null || true
-    echo "  ✓ Source restored to upstream."
+    echo "  ✓ Upstream web app files removed."
 }
 trap cleanup EXIT
 
@@ -59,23 +60,46 @@ echo "════════════════════════�
 echo "  Fabiodalez Music — Android Build"
 echo "══════════════════════════════════════════"
 
-# ── 1. Pull latest ──
+# ── 1. Pull latest upstream web app source ──
+# This repo tracks only the Android wrapper. Web app files come from upstream.
+# We use git archive (not git pull) because the histories are unrelated.
 echo ""
 echo "▶ Pulling latest from upstream/main..."
 cleanup 2>/dev/null || true
 git fetch upstream
-LOCAL=$(git rev-parse HEAD)
-REMOTE=$(git rev-parse upstream/main)
 
-if [ "$LOCAL" = "$REMOTE" ]; then
-    echo "  Already up to date."
+UPSTREAM_SHA=$(git rev-parse upstream/main)
+SYNC_FILE="$PROJECT_DIR/.upstream-sync-sha"
+LAST_SHA=$(cat "$SYNC_FILE" 2>/dev/null || echo "")
+
+if [ "$UPSTREAM_SHA" = "$LAST_SHA" ] && [ -f index.html ]; then
+    echo "  Already up to date ($(git rev-parse --short upstream/main))."
     read -p "  Build anyway? (y/N) " -n 1 -r
     echo
     [[ ! $REPLY =~ ^[Yy]$ ]] && exit 0
 else
-    echo "  $(git rev-list --count HEAD..upstream/main) new commits."
-    git pull upstream main
-    echo "  ✓ Updated."
+    N=$(git rev-list --count "${LAST_SHA:-upstream/main^}..upstream/main" 2>/dev/null || echo "?")
+    echo "  $N new commits. Extracting web app from upstream/main..."
+    # Extract upstream web app files, excluding our Android additions and docs.
+    git archive upstream/main | tar -x \
+        --exclude='capacitor.config.ts' \
+        --exclude='README.md' \
+        --exclude='android/app' \
+        --exclude='android/android-service.js' \
+        --exclude='android/fm-logger.js' \
+        --exclude='android/capacitor-cordova-android-plugins' \
+        --exclude='ios' \
+        --exclude='extension' \
+        --exclude='docker' \
+        --exclude='.devcontainer' \
+        --exclude='.github' \
+        --exclude='CONTRIBUTING.md' \
+        --exclude='DOCKER.md' \
+        --exclude='INSTANCES.md' \
+        --exclude='THEME_GUIDE.md' \
+        --exclude='license'
+    echo "$UPSTREAM_SHA" > "$SYNC_FILE"
+    echo "  ✓ Updated to $(git rev-parse --short upstream/main)."
 fi
 
 # ── 2a. Pre-npm patch: fix upstream broken override ──
@@ -181,16 +205,9 @@ patch(
     "storage.js: add frankfurt-2 to streaming fallback",
 )
 
-# ── #54: Always try native HiFiClient for streaming (not just proxies) ──
-# The upstream code skips HiFiClient for streaming requests (type='streaming')
-# and goes straight to proxy instances. But when ALL proxies are down/403,
-# there's no fallback. Force shouldTryNative=true so HiFiClient is tried first.
-patch(
-    "js/api.js",
-    "        const shouldTryNative = type !== 'streaming';",
-    "        const shouldTryNative = true; // patched: always try native, including streaming",
-    "api.js: force native HiFiClient for streaming",
-)
+# ── #54: REMOVED — was forcing native HiFiClient for streaming, which gives
+# only preview (1:40) because the browser client credentials aren't premium.
+# Streaming MUST go through proxy instances (they have premium credentials).
 
 # ── #1 + #2: debounce + min-chars REMOVED ──
 # The upstream 3000ms debounce works fine in practice — it lets users finish

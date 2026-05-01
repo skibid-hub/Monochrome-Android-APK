@@ -2,7 +2,6 @@
 // Saves all console output to Downloads/FabiodalezMusic/fm-console-log.txt
 
 // Tell upstream we handle Tidal Origin natively — skip audio-proxy.binimum.org.
-window.__tidalOriginExtension = true;
 
 // Block Service Worker registration IMMEDIATELY (before any other script runs).
 // The upstream VitePWA plugin registers a SW that uses CacheFirst for audio,

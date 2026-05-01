@@ -6,12 +6,6 @@
 // (fm-logger.js is loaded separately in <head> as a synchronous script
 //  so it captures ALL console output from the very start, before any module.)
 
-// ── TIDAL ORIGIN BYPASS ──
-// Tell the upstream proxy-utils.js that we handle the Origin header natively
-// (via TidalWebViewClient.java), so it should use direct CDN URLs instead of
-// routing through audio-proxy.binimum.org (which is often down/403).
-// This is the same flag the Chrome extension "Monochrome Tidal Bypass" sets.
-window.__tidalOriginExtension = true;
 
 // ── UNREGISTER SERVICE WORKER ──
 // The upstream workbox SW uses CacheFirst for audio/video, but Tidal CDN
