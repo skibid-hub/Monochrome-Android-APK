@@ -11,6 +11,7 @@ set -euo pipefail
 #   js/app.js    — search debounce 3000→500 ms
 #   js/api.js    — search result limit = 100 (was backend default ≈25)
 #   js/cache.js  — per-type TTL + query normalization (trim/lowercase/diacritics)
+#   js/HiFi.ts   — add artists.profileArt to unified search include (fix Picsum covers)
 #
 # All reverted automatically on exit. Upstream repo stays clean.
 # ─────────────────────────────────────────────────────────
@@ -417,6 +418,19 @@ patch(
     "vite.config.ts: workbox audio/video CacheFirst -> NetworkOnly",
 )
 
+# ── #55: HiFi.ts unified search — add artists.profileArt to include ──
+# The unified search (q=) omits 'artists.profileArt' from the include list,
+# so artist items in the included array have no profileArt relationships and
+# no artwork entries are returned. resolveArtworkId(item,'profileArt') always
+# returns null → artist.picture = null → getCoverUrl(null) → random Picsum.
+# The per-artist search (a=) already has artists.profileArt — this aligns q=.
+patch(
+    "js/HiFi.ts",
+    "'albums,albums.coverArt,albums.artists,tracks,tracks.artists,tracks.albums,tracks.albums.coverArt,artists,playlists,videos'",
+    "'albums,albums.coverArt,albums.artists,tracks,tracks.artists,tracks.albums,tracks.albums.coverArt,artists,artists.profileArt,playlists,videos'",
+    "HiFi.ts: add artists.profileArt to unified search include (fixes Picsum artist covers)",
+)
+
 print("  ✓ Upstream JS optimizations applied.")
 PYEOF
 
@@ -424,7 +438,10 @@ echo "  ✓ JS upstream optimizations applied (debounce, cache, limits)."
 
 # ── 4. Copy wrapper JS files from android/ storage ──
 cp "$PROJECT_DIR/android/android-service.js" js/android-service.js
-cp "$PROJECT_DIR/android/fm-logger.js" js/fm-logger.js
+# fm-logger must go into public/js/ so Vite copies it to dist/js/ as a static asset.
+# Putting it in js/ (source dir) would leave it out of the dist/ bundle entirely.
+mkdir -p public/js
+cp "$PROJECT_DIR/android/fm-logger.js" public/js/fm-logger.js
 echo "  ✓ android-service.js + fm-logger.js copied."
 
 # ── 5. Init Capacitor Android if needed ──
