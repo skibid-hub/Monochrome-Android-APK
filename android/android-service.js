@@ -7,6 +7,22 @@
 //  so it captures ALL console output from the very start, before any module.)
 
 
+// ── STREAMING INSTANCES BOOTSTRAP ──
+// Pre-configures HiFi API streaming instances so tracks not on Qobuz
+// still play via the Tidal proxy fallback (getStreamUrl → getTrack fallback).
+(function () {
+    var k = 'monochrome-user-api-instances-v1';
+    var d = JSON.parse(localStorage.getItem(k) || '{}');
+    if (!d.streaming || d.streaming.length === 0) {
+        d.streaming = [
+            { url: 'https://eu-central.monochrome.tf', isUser: true, version: '2.10' },
+            { url: 'https://us-west.monochrome.tf', isUser: true, version: '2.10' },
+            { url: 'https://hifi-api.kennyy.com.br', isUser: true, version: '2.10' },
+        ];
+        localStorage.setItem(k, JSON.stringify(d));
+    }
+})();
+
 // ── UNREGISTER SERVICE WORKER ──
 // The upstream workbox SW uses CacheFirst for audio/video, but Tidal CDN
 // streams don't serve CORS headers → workbox can't read the response →

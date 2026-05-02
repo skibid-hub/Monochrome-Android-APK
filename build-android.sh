@@ -191,18 +191,21 @@ def patch(path, before, after, label):
     print("  + " + label)
     return True
 
-# ── #53: Add working streaming instance to fallback list ──
-# The hardcoded fallback in storage.js doesn't include frankfurt-2.monochrome.tf,
-# which is often the ONLY working streaming proxy. On a fresh install where the
-# uptime worker fetch fails, all hardcoded instances return 403 → no playback.
+# ── #53: Add live streaming instances to hardcoded fallback list ──
+# The uptime worker returns streaming:[] so the default list is the only fallback
+# when the network fetch fails on a fresh install. We add the same 3 live instances
+# used in the web app (index.html) and android-service.js localStorage bootstrap.
+# frankfurt-2 was previously here but is now DOWN (504).
 patch(
     "js/storage.js",
     """                    streaming: [
                         { url: 'https://hifi.geeked.wtf', version: '2.7' },""",
     """                    streaming: [
-                        { url: 'https://frankfurt-2.monochrome.tf', version: '2.10' },
+                        { url: 'https://eu-central.monochrome.tf', version: '2.10' },
+                        { url: 'https://us-west.monochrome.tf', version: '2.10' },
+                        { url: 'https://hifi-api.kennyy.com.br', version: '2.10' },
                         { url: 'https://hifi.geeked.wtf', version: '2.7' },""",
-    "storage.js: add frankfurt-2 to streaming fallback",
+    "storage.js: add live streaming instances to fallback",
 )
 
 # ── #54: REMOVED — was forcing native HiFiClient for streaming, which gives
