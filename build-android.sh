@@ -11,6 +11,7 @@ set -euo pipefail
 #   js/app.js    — search debounce 3000→500 ms
 #   js/api.js    — search result limit = 100 (was backend default ≈25)
 #   js/cache.js  — per-type TTL + query normalization (trim/lowercase/diacritics)
+#   js/app.js    — search debounce 3000ms → 800ms
 #   js/HiFi.ts   — add artists.profileArt to unified search include (fix Picsum covers)
 #
 # All reverted automatically on exit. Upstream repo stays clean.
@@ -213,12 +214,17 @@ patch(
 # only preview (1:40) because the browser client credentials aren't premium.
 # Streaming MUST go through proxy instances (they have premium credentials).
 
-# ── #1 + #2: debounce + min-chars REMOVED ──
-# The upstream 3000ms debounce works fine in practice — it lets users finish
-# typing before navigating. Our attempts to reduce it (500ms, 700ms) all
-# caused the search page to render for partial queries.
-# Keeping upstream behavior as-is.
-#
+# ── #1: debounce 3000ms → 800ms ──
+# 3 seconds after the last keystroke is too slow for mobile. 800ms is the
+# standard for search bars and still avoids firing on every keystroke.
+# "Renders partial queries" is normal search behavior (like Spotify/Google).
+patch(
+    "js/app.js",
+    "}, 3000);",
+    "}, 800);",
+    "app.js: search debounce 3000ms -> 800ms",
+)
+
 # The limit=100 and cache normalization patches below still apply.
 
 # ── #52: Enrich albums missing artist/cover from track data ──
