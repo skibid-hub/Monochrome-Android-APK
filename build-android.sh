@@ -437,6 +437,18 @@ patch(
     "HiFi.ts: add artists.profileArt to unified search include (fixes Picsum artist covers)",
 )
 
+# ── #56: HiFi.ts artist page — add tracks.albums.coverArt to include ──
+# The artist endpoint includes tracks,tracks.albums (top tracks with album ref)
+# but NOT tracks.albums.coverArt. Album items land in includedMap without the
+# coverArt relationship, so resolveArtworkId(albumItem,'coverArt') returns null
+# → track.album.cover = null → Picsum on every track row in the artist page.
+patch(
+    "js/HiFi.ts",
+    "include: 'albums,albums.coverArt,tracks,tracks.albums,biography,profileArt',",
+    "include: 'albums,albums.coverArt,tracks,tracks.albums,tracks.albums.coverArt,biography,profileArt',",
+    "HiFi.ts: add tracks.albums.coverArt to artist page include (fixes Picsum track covers)",
+)
+
 print("  ✓ Upstream JS optimizations applied.")
 PYEOF
 

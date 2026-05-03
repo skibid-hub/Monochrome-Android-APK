@@ -329,6 +329,14 @@ patch(
     "HiFi.ts: add artists.profileArt to unified search include (fixes Picsum artist covers)",
 )
 
+# ── HiFi.ts: add tracks.albums.coverArt to artist page include ──
+patch(
+    "js/HiFi.ts",
+    "include: 'albums,albums.coverArt,tracks,tracks.albums,biography,profileArt',",
+    "include: 'albums,albums.coverArt,tracks,tracks.albums,tracks.albums.coverArt,biography,profileArt',",
+    "HiFi.ts: add tracks.albums.coverArt to artist page include (fixes Picsum track covers)",
+)
+
 # ── Workbox: CacheFirst → NetworkOnly for audio/video ──
 patch(
     "vite.config.ts",
