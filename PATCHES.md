@@ -504,4 +504,10 @@ Studio e guarda l'errore reale. Tipicamente:
   (escluso #31 battery opt su richiesta esplicita dell'utente). Aggiunti
   `fm-build.sh`, `verify-patches.sh`, `PATCHES.md`. Rimosso il sed obsoleto
   `viewport-fit=cover` perché upstream già lo ship.
-- Future update: riservato per quando upstream mergerà le PR candidate
+- **2026-05-06** — v2.7.0: Sync upstream `3936c07`. 14 nuovi commit upstream
+  inclusi senza conflitti (11/11 patch pass). Novità upstream rilevanti:
+  `enrichArtistsWithPicture` + `enrichTracksWithAlbumCover` come fallback lazy
+  in `api.js` (complementari ai nostri fix #55/#56 su `HiFi.ts`); fix download
+  quality Qobuz (LOSSLESS→`'6'`); playlist exports; rimozione browser extension.
+  Manifest Android già aggiornato (POST_NOTIFICATIONS, READ_MEDIA_AUDIO,
+  WAKE_LOCK presenti da prima nel wrapper).
