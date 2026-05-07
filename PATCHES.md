@@ -504,6 +504,10 @@ Studio e guarda l'errore reale. Tipicamente:
   (escluso #31 battery opt su richiesta esplicita dell'utente). Aggiunti
   `fm-build.sh`, `verify-patches.sh`, `PATCHES.md`. Rimosso il sed obsoleto
   `viewport-fit=cover` perché upstream già lo ship.
+- **2026-05-08** — v2.8.0: Sync upstream `8cf6740`. Nuovo proxy Qobuz primario
+  (`trypt-hifi-dl-456461932686.us-west1.run.app`), fix FOUC tema (preload
+  script in `<head>`), nuova istanza ufficiale `if-it-runs-ship-it.lol`.
+  Tutti i patch invariati (11/11 pass).
 - **2026-05-06** — v2.7.0: Sync upstream `3936c07`. 14 nuovi commit upstream
   inclusi senza conflitti (11/11 patch pass). Novità upstream rilevanti:
   `enrichArtistsWithPicture` + `enrichTracksWithAlbumCover` come fallback lazy
