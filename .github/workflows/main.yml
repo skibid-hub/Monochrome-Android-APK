@@ -1,0 +1,54 @@
+name: Build Monochrome APK
+on: 
+  workflow_dispatch: 
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24' # This fixes the Node 20 deprecation warning
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+
+      # 1. Securely checkout your Android wrapper (Bypasses the 500 error)
+      - name: Checkout the Overlay
+        uses: actions/checkout@v4
+        with:
+          path: 'overlay'
+
+      # 2. Securely checkout the original music app
+      - name: Checkout the Original App
+        uses: actions/checkout@v4
+        with:
+          repository: 'monochrome-music/monochrome'
+          path: 'monochrome'
+
+      # 3. Rename remotes and merge the code
+      - name: Prepare and Merge Code
+        run: |
+          cd monochrome
+          git remote rename origin upstream
+          cd ../overlay
+          chmod +x install.sh
+          ./install.sh ../monochrome
+
+      # 4. Build the final application
+      - name: Run Build Script
+        run: |
+          cd monochrome
+          chmod +x ./build-android.sh
+          ./build-android.sh
+
+      # 5. Upload the compiled file
+      - name: Upload Finished APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: Monochrome-App
+          path: 'monochrome/**/*.apk'
